@@ -1,0 +1,7 @@
+bitbake/
+build/
+meta-arm/
+meta-beskar/
+meta-ti/
+openembedded-core/
+.kas_shell_history/
