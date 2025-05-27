@@ -5,11 +5,14 @@ distro: tacos
 target:
   - taco
 repos:
-  meta-beskar:
+  meta-tacos:
+    layers:
+      meta-tacos:
+  beskar:
+    url: "https://github.com/team-anant/beskar.git"
+    branch: "master"
     layers:
       meta-beskar:
-      meta-tacos:
-
   openembedded-core:
     url: "https://github.com/openembedded/openembedded-core.git"
     branch: "walnascar"
@@ -29,7 +32,7 @@ repos:
   meta-ti:
     url: "https://git.yoctoproject.org/meta-ti"
     branch: master
-    commit: 118946e71938640d753022d7fe3e515b4b83e818
+    # commit: 118946e71938640d753022d7fe3e515b4b83e818
     layers:
       meta-ti-bsp:
       meta-beagle:
