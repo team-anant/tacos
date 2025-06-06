@@ -1,6 +1,7 @@
 bitbake/
 build/
 meta-arm/
+beskar/
 meta-beskar/
 meta-ti/
 openembedded-core/
