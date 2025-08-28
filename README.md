@@ -2,6 +2,7 @@
 TACOS is the operating system that will be used on team Anant's CubeSat mission.
 # Features
 - Support for Linux 6.12
+- Read-only root filesystem
 # Steps to build image
 ### Install kas (One time)
 ```bash

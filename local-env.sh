@@ -12,6 +12,5 @@ export DL_DIR="/run/media/dhruv/0d2781b8-a6bd-433a-b06f-2fe56c3c81ae/downloads/"
 
 export SSTATE_DIR="/run/media/dhruv/0d2781b8-a6bd-433a-b06f-2fe56c3c81ae/sstate-cache/"
 
-export TMPDIR="/run/media/dhruv/0d2781b8-a6bd-433a-b06f-2fe56c3c81ae/tmp/"
 
-# export KAS_MACHINE="qemuarm"
+export KAS_MACHINE="qemuarm"
