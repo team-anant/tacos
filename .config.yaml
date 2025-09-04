@@ -10,22 +10,25 @@ repos:
       meta-tacos:
   beskar:
     url: "https://github.com/team-anant/beskar.git"
-    branch: "master"
+    branch: "unstable/sched_ext"
     layers:
       meta-beskar:
+  meta-clang:
+    url: "https://github.com/kraj/meta-clang.git"
+    branch: "master"
   openembedded-core:
     url: "https://github.com/openembedded/openembedded-core.git"
-    branch: "walnascar"
+    branch: "master"
     layers:
       meta:
   bitbake:
     url: "https://github.com/openembedded/bitbake.git"
-    branch: "2.12"
+    branch: "2.14"
     layers:
-      .: excluded
+      .: disabled
   meta-arm:
     url: "https://git.yoctoproject.org/meta-arm"
-    branch: "walnascar"
+    branch: "master"
     layers:
       meta-arm-toolchain:
       meta-arm:
@@ -37,6 +40,6 @@ repos:
       meta-ti-bsp:
       meta-beagle:
 local_conf_header:
-  meta-kiss: |
+  meta-tacos: |
     # INHERIT += "rm_work"
     # EXTRA_IMAGE_FEATURES = "debug-tweaks"
