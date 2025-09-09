@@ -5,4 +5,5 @@ beskar/
 meta-beskar/
 meta-ti/
 openembedded-core/
+local-env.sh
 .kas_shell_history
