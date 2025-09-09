@@ -13,6 +13,11 @@ repos:
     branch: "unstable/sched_ext"
     layers:
       meta-beskar:
+  meta-openembedded:
+    url: "https://github.com/openembedded/meta-openembedded.git"
+    branch: "master"
+    layers:
+      meta-oe:
   meta-clang:
     url: "https://github.com/kraj/meta-clang.git"
     branch: "master"
