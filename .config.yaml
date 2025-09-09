@@ -16,24 +16,29 @@ repos:
   meta-openembedded:
     url: "https://github.com/openembedded/meta-openembedded.git"
     branch: "master"
+    commit: "2e9e58b7389534626d161d20a1c4f2a501be2a8e"
     layers:
       meta-oe:
   meta-clang:
     url: "https://github.com/kraj/meta-clang.git"
     branch: "master"
+    commit: "af59ec636f0f956a94356ede6579e11b8653314d"
   openembedded-core:
     url: "https://github.com/openembedded/openembedded-core.git"
     branch: "master"
+    commit: "0a849dc7edeecb6c16a8a0fe347015d6d85e9dfd"
     layers:
       meta:
   bitbake:
     url: "https://github.com/openembedded/bitbake.git"
     branch: "2.14"
+    commit: "546b347b4d3d82c01ecc99f45296f66e44638adc"
     layers:
       .: disabled
   meta-arm:
     url: "https://git.yoctoproject.org/meta-arm"
     branch: "master"
+    commit: "84b96041d393a71d085b967e57431d8674c314cd"
     layers:
       meta-arm-toolchain:
       meta-arm:
@@ -41,6 +46,7 @@ repos:
     url: "https://git.yoctoproject.org/meta-ti"
     branch: master
     # commit: 118946e71938640d753022d7fe3e515b4b83e818
+    commit: "3dad773982636ade2ba685089e351ce69a28f9dc"
     layers:
       meta-ti-bsp:
       meta-beagle:
