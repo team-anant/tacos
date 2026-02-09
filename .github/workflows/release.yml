@@ -11,7 +11,9 @@ jobs:
   build-release:
     runs-on: ubuntu-latest
     timeout-minutes: 480
-    
+    permissions:
+      contents: write  # Required for uploading release assets
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

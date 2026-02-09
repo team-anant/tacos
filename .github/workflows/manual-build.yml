@@ -22,6 +22,8 @@ jobs:
   manual-build:
     runs-on: ubuntu-latest
     timeout-minutes: 480
+    permissions:
+      contents: write  # Required for creating releases
 
     steps:
       - name: Checkout repository
