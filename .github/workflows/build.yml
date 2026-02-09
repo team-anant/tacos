@@ -95,7 +95,7 @@ jobs:
         if-no-files-found: ignore
 
     - name: Create release tag
-      if: success() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+      if: success() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
       id: create_tag
       run: |
         # Generate a timestamp-based tag for automated builds
@@ -104,7 +104,7 @@ jobs:
         echo "Creating tag: $TAG"
 
     - name: Create GitHub Release
-      if: success() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+      if: success() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.create_tag.outputs.tag }}

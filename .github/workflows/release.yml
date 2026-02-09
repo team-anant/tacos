@@ -111,6 +111,6 @@ jobs:
 
             ### Build Information
             - Commit: ${{ github.sha }}
-            - Build Date: ${{ github.event.head_commit.timestamp || github.event.created_at }}
+            - Workflow Run: ${{ github.run_number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
