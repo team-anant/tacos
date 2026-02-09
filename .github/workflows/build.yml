@@ -93,3 +93,43 @@ jobs:
           build/tmp/log/**/*.log
         retention-days: 7
         if-no-files-found: ignore
+
+    - name: Create release tag
+      if: success() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+      id: create_tag
+      run: |
+        # Generate a timestamp-based tag for automated builds
+        TAG="build-$(date +%Y%m%d-%H%M%S)"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Creating tag: $TAG"
+
+    - name: Create GitHub Release
+      if: success() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.create_tag.outputs.tag }}
+        name: TACOS Build ${{ steps.create_tag.outputs.tag }}
+        body: |
+          Automated build of TACOS CubeSat Operating System
+
+          **Build Information:**
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref_name }}
+          - Build Date: ${{ github.event.head_commit.timestamp }}
+
+          **Artifacts:**
+          This release contains the bootable TACOS image (.wic) and block map (.wic.bmap) files.
+
+          **Installation:**
+          To flash the image to a BeagleBone Black SD card:
+          ```bash
+          sudo bmaptool copy taco.wic /dev/sdX
+          ```
+          Replace /dev/sdX with your SD card device.
+        files: |
+          build/tmp/deploy/images/bleedingbone/*.wic
+          build/tmp/deploy/images/bleedingbone/*.wic.bmap
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

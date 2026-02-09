@@ -1,0 +1,38 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  validate-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install kas
+        run: |
+          pip install kas
+          kas --version
+
+      - name: Validate kas configuration
+        run: |
+          echo "Validating .config.yaml..."
+          kas dump .config.yaml
+          echo "Configuration is valid!"
+
+      - name: Check for required files
+        run: |
+          echo "Checking for required files..."
+          test -f .config.yaml && echo "✓ .config.yaml exists"
+          test -f README.md && echo "✓ README.md exists"
+          test -d meta-tacos && echo "✓ meta-tacos directory exists"
+          echo "All required files present!"

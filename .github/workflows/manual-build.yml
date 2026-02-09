@@ -1,0 +1,128 @@
+name: Manual Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_target:
+        description: 'Build target (default: taco)'
+        required: false
+        default: 'taco'
+      clean_build:
+        description: 'Clean build (removes previous build artifacts)'
+        required: false
+        type: boolean
+        default: false
+      create_release:
+        description: 'Create a release with build artifacts'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  manual-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 480
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free up disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install kas
+        run: |
+          pip install kas
+          kas --version
+
+      - name: Clean previous build
+        if: ${{ inputs.clean_build }}
+        run: |
+          echo "Cleaning previous build artifacts..."
+          rm -rf build/
+
+      - name: Cache build downloads
+        if: ${{ !inputs.clean_build }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/downloads
+            build/sstate-cache
+          key: ${{ runner.os }}-yocto-${{ hashFiles('.config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-yocto-
+
+      - name: Build with kas-container
+        run: |
+          echo "Building target: ${{ inputs.build_target }}"
+          kas-container build
+        env:
+          KAS_BUILD_DIR: build
+
+      - name: List build artifacts
+        run: |
+          echo "Build artifacts:"
+          find build/tmp/deploy/images/ -type f -name "*.wic" -o -name "*.wic.bmap" || true
+
+      - name: Generate checksums
+        if: success()
+        run: |
+          cd build/tmp/deploy/images/bleedingbone/
+          sha256sum *.wic *.wic.bmap > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tacos-manual-build-${{ github.run_number }}
+          path: |
+            build/tmp/deploy/images/bleedingbone/*.wic
+            build/tmp/deploy/images/bleedingbone/*.wic.bmap
+            build/tmp/deploy/images/bleedingbone/SHA256SUMS.txt
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Create manual release
+        if: success() && inputs.create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: manual-${{ github.run_number }}-${{ github.sha }}
+          name: Manual Build ${{ github.run_number }}
+          body: |
+            Manual build triggered by workflow dispatch
+
+            **Build Information:**
+            - Target: ${{ inputs.build_target }}
+            - Clean Build: ${{ inputs.clean_build }}
+            - Commit: ${{ github.sha }}
+            - Run Number: ${{ github.run_number }}
+
+            **Installation:**
+            ```bash
+            sudo bmaptool copy taco.wic /dev/sdX
+            ```
+          files: |
+            build/tmp/deploy/images/bleedingbone/*.wic
+            build/tmp/deploy/images/bleedingbone/*.wic.bmap
+            build/tmp/deploy/images/bleedingbone/SHA256SUMS.txt
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
