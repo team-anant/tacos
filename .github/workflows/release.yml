@@ -1,0 +1,118 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [created]
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 480
+    permissions:
+      contents: write  # Required for uploading release assets
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free up disk space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install kas
+        run: |
+          pip install kas
+          kas --version
+
+      - name: Cache build downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/downloads
+            build/sstate-cache
+          key: ${{ runner.os }}-yocto-release-${{ hashFiles('.config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-yocto-
+
+      - name: Build with kas-container
+        run: |
+          kas-container build
+        env:
+          KAS_BUILD_DIR: build
+
+      - name: Check build artifacts
+        run: |
+          echo "Checking for build artifacts..."
+          if [ -d "build/tmp/deploy/images/bleedingbone/" ]; then
+            echo "Build artifacts found:"
+            ls -lh build/tmp/deploy/images/bleedingbone/
+          else
+            echo "Build artifacts directory not found!"
+            exit 1
+          fi
+
+      - name: Generate checksums
+        run: |
+          cd build/tmp/deploy/images/bleedingbone/
+          sha256sum *.wic *.wic.bmap > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/tmp/deploy/images/bleedingbone/*.wic
+            build/tmp/deploy/images/bleedingbone/*.wic.bmap
+            build/tmp/deploy/images/bleedingbone/SHA256SUMS.txt
+          body: |
+            ## TACOS CubeSat Operating System - Release ${{ github.ref_name }}
+
+            ### Features
+            - Support for Linux 6.12
+            - Read-only root filesystem
+            - Optimized for BeagleBone Black
+
+            ### Installation Instructions
+
+            Download the `.wic` file and flash it to an SD card:
+
+            ```bash
+            # Using bmaptool (recommended)
+            sudo bmaptool copy taco.wic /dev/sdX
+
+            # Or using dd
+            sudo dd if=taco.wic of=/dev/sdX bs=4M status=progress
+            ```
+
+            Replace `/dev/sdX` with your SD card device.
+
+            ### Verification
+
+            Verify the download integrity using the included SHA256SUMS.txt:
+            ```bash
+            sha256sum -c SHA256SUMS.txt
+            ```
+
+            ### Build Information
+            - Commit: ${{ github.sha }}
+            - Workflow Run: ${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

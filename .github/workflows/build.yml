@@ -1,0 +1,137 @@
+name: Build TACOS
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 480  # 8 hours for Yocto builds
+    permissions:
+      contents: write  # Required for creating releases
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for proper version tracking
+    
+    - name: Free up disk space
+      run: |
+        echo "Disk space before cleanup:"
+        df -h
+        # Remove unnecessary packages to free up space for Yocto build
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo apt-get clean
+        echo "Disk space after cleanup:"
+        df -h
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    
+    - name: Install kas
+      run: |
+        pip install kas
+        kas --version
+    
+    - name: Set up Docker
+      run: |
+        # Ensure Docker is available for kas-container
+        docker --version
+    
+    - name: Cache build downloads
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/downloads
+          build/sstate-cache
+        key: ${{ runner.os }}-yocto-${{ hashFiles('.config.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-yocto-
+    
+    - name: Build with kas-container
+      run: |
+        kas-container build
+      env:
+        KAS_BUILD_DIR: build
+    
+    - name: Check build artifacts
+      run: |
+        echo "Checking for build artifacts..."
+        if [ -d "build/tmp/deploy/images/bleedingbone/" ]; then
+          echo "Build artifacts found:"
+          ls -lh build/tmp/deploy/images/bleedingbone/
+        else
+          echo "Build artifacts directory not found!"
+          exit 1
+        fi
+    
+    - name: Upload build artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tacos-images
+        path: |
+          build/tmp/deploy/images/bleedingbone/*.wic
+          build/tmp/deploy/images/bleedingbone/*.wic.bmap
+        retention-days: 30
+        if-no-files-found: warn
+    
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs
+        path: |
+          build/tmp/log/**/*.log
+        retention-days: 7
+        if-no-files-found: ignore
+
+    - name: Create release tag
+      if: success() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+      id: create_tag
+      run: |
+        # Generate a timestamp-based tag for automated builds
+        TAG="build-$(date +%Y%m%d-%H%M%S)"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Creating tag: $TAG"
+
+    - name: Create GitHub Release
+      if: success() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.create_tag.outputs.tag }}
+        name: TACOS Build ${{ steps.create_tag.outputs.tag }}
+        body: |
+          Automated build of TACOS CubeSat Operating System
+
+          **Build Information:**
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref_name }}
+          - Build Date: ${{ github.event.head_commit.timestamp }}
+
+          **Artifacts:**
+          This release contains the bootable TACOS image (.wic) and block map (.wic.bmap) files.
+
+          **Installation:**
+          To flash the image to a BeagleBone Black SD card:
+          ```bash
+          sudo bmaptool copy taco.wic /dev/sdX
+          ```
+          Replace /dev/sdX with your SD card device.
+        files: |
+          build/tmp/deploy/images/bleedingbone/*.wic
+          build/tmp/deploy/images/bleedingbone/*.wic.bmap
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
